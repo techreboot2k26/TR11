@@ -390,11 +390,16 @@ export class DefaultQueueEngine implements IQueueEngine {
 
       const now = new Date().toISOString();
 
-      db.prepare(`
+      const updateRes = db.prepare(`
         UPDATE tokens
         SET status = 'SERVING', counter_id = ?, started_at = ?
         WHERE id = ? AND status = 'WAITING'
       `).run(counterId, now, nextToken.id);
+
+      if (updateRes.changes === 0) {
+        errorMessage = 'Concurrent operation detected: Token has already been claimed by another counter.';
+        return;
+      }
 
       resultToken = db.prepare('SELECT * FROM tokens WHERE id = ?').get(nextToken.id) as TokenRecord;
     });
@@ -439,11 +444,16 @@ export class DefaultQueueEngine implements IQueueEngine {
 
       const now = new Date().toISOString();
 
-      db.prepare(`
+      const updateRes = db.prepare(`
         UPDATE tokens
         SET status = 'COMPLETED', completed_at = ?
-        WHERE id = ? AND status = 'SERVING'
-      `).run(now, tokenId);
+        WHERE id = ? AND status = 'SERVING' AND counter_id = ?
+      `).run(now, tokenId, counterId);
+
+      if (updateRes.changes === 0) {
+        errorMessage = 'Concurrent operation detected: Token has already been completed or modified by another session.';
+        return;
+      }
 
       resultToken = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId) as TokenRecord;
     });
@@ -481,11 +491,16 @@ export class DefaultQueueEngine implements IQueueEngine {
 
       const now = new Date().toISOString();
 
-      db.prepare(`
+      const updateRes = db.prepare(`
         UPDATE tokens
         SET status = 'HELD', held_at = ?
-        WHERE id = ? AND status = 'SERVING'
-      `).run(now, tokenId);
+        WHERE id = ? AND status = 'SERVING' AND counter_id = ?
+      `).run(now, tokenId, counterId);
+
+      if (updateRes.changes === 0) {
+        errorMessage = 'Concurrent operation detected: Token state was modified by another session.';
+        return;
+      }
 
       resultToken = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId) as TokenRecord;
     });
@@ -527,11 +542,16 @@ export class DefaultQueueEngine implements IQueueEngine {
 
       const now = new Date().toISOString();
 
-      db.prepare(`
+      const updateRes = db.prepare(`
         UPDATE tokens
         SET status = 'SERVING', counter_id = ?, started_at = ?
         WHERE id = ? AND status = 'HELD'
       `).run(counterId, now, tokenId);
+
+      if (updateRes.changes === 0) {
+        errorMessage = 'Concurrent operation detected: Token was already resumed or modified by another session.';
+        return;
+      }
 
       resultToken = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId) as TokenRecord;
     });
@@ -564,11 +584,16 @@ export class DefaultQueueEngine implements IQueueEngine {
 
       const now = new Date().toISOString();
 
-      db.prepare(`
+      const updateRes = db.prepare(`
         UPDATE tokens
         SET status = 'SKIPPED', skipped_at = ?
-        WHERE id = ?
+        WHERE id = ? AND status IN ('SERVING', 'HELD', 'WAITING')
       `).run(now, tokenId);
+
+      if (updateRes.changes === 0) {
+        errorMessage = 'Concurrent operation detected: Token status was modified by another session.';
+        return;
+      }
 
       resultToken = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId) as TokenRecord;
     });

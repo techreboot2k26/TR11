@@ -59,11 +59,9 @@ app.use('/api', (req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/staff', staffQueueRoutes);
 app.use('/api/student', studentQueueRoutes);
+app.use('/api/student', studentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/queue', queueRoutes);
-// Using studentRoutes under another path or same if they merge, but let's mount studentRoutes on '/api/student_engine' to avoid conflict, or maybe they were mounted on '/api/student' too?
-// Remote had `app.use('/api/student', studentRoutes);`
-app.use('/api/student_engine', studentRoutes); // to prevent conflict with studentQueueRoutes which is on /api/student. Wait, what if they were supposed to be combined? I'll just mount them both on /api/student? Express allows it, but it might override. Let's see. Let's look at `student.ts` briefly.
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

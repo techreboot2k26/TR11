@@ -15,7 +15,7 @@ export interface AuthRequest extends Request {
 
 export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader && (authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader.split(' ')[1]);
 
   if (!token) {
     res.status(401).json({ error: 'Unauthorized: Access token is missing' });
@@ -50,8 +50,8 @@ export function requireRole(allowedRoles: Array<'STUDENT' | 'STAFF' | 'ADMIN'>) 
 }
 
 export function requireCounterAssignment(req: AuthRequest, res: Response, next: NextFunction): void {
-  if (!req.user || req.user.role !== 'STAFF') {
-    res.status(403).json({ error: 'Forbidden: Staff role required' });
+  if (!req.user || (req.user.role !== 'STAFF' && req.user.role !== 'ADMIN')) {
+    res.status(403).json({ error: 'Forbidden: Staff or Admin role required' });
     return;
   }
 
@@ -63,7 +63,7 @@ export function requireCounterAssignment(req: AuthRequest, res: Response, next: 
     WHERE c.assigned_staff_id = ?
   `).get(req.user.id) as any;
 
-  if (!counter) {
+  if (!counter && req.user.role === 'STAFF') {
     res.status(403).json({
       error: 'Forbidden: Staff member is not assigned to any active counter'
     });
@@ -71,6 +71,6 @@ export function requireCounterAssignment(req: AuthRequest, res: Response, next: 
   }
 
   // Attach counter details to request object for easy access
-  (req as any).assignedCounter = counter;
+  (req as any).assignedCounter = counter || null;
   next();
 }

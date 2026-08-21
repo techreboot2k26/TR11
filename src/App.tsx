@@ -48,6 +48,9 @@ const ProtectedStaffRoute: React.FC<{ children: React.ReactNode }> = ({ children
         <p style={{ color: 'var(--text-secondary)' }}>
           Student accounts cannot access the Staff Queue Operations Module.
         </p>
+        <a href="/login" className="btn btn-primary" style={{ marginTop: '0.5rem', textDecoration: 'none' }}>
+          Back to Sign In
+        </a>
       </div>
     );
   }
@@ -91,8 +94,11 @@ const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children
       }}>
         <h2>Access Denied</h2>
         <p style={{ color: 'var(--text-secondary)' }}>
-          Only System Administrators can access this area.
+          Only System Administrators can access this area. Log in with admin credentials (admin@queuecraft.edu).
         </p>
+        <a href="/login" className="btn btn-primary" style={{ marginTop: '0.5rem', textDecoration: 'none' }}>
+          Back to Sign In
+        </a>
       </div>
     );
   }
@@ -138,6 +144,9 @@ const ProtectedStudentRoute: React.FC<{ children: React.ReactNode }> = ({ childr
         <p style={{ color: 'var(--text-secondary)' }}>
           This section is restricted to student accounts only.
         </p>
+        <a href="/login" className="btn btn-primary" style={{ marginTop: '0.5rem', textDecoration: 'none' }}>
+          Back to Sign In
+        </a>
       </div>
     );
   }

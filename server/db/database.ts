@@ -21,21 +21,21 @@ function createDummyDb(): any {
     all: () => [],
   };
   return {
-    exec: () => {},
-    pragma: () => {},
+    exec: () => { },
+    pragma: () => { },
     prepare: () => dummyStatement,
     transaction: (fn: any) => fn,
-    close: () => {},
+    close: () => { },
   };
 }
 
 export function getDb(): any {
   if (!dbInstance) {
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
     try {
-      const dbDir = path.dirname(dbPath);
-      if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
-      }
       const Database = require('better-sqlite3');
       dbInstance = new Database(dbPath);
       // Enable Foreign Keys & Write-Ahead Logging for concurrency safety
@@ -44,8 +44,49 @@ export function getDb(): any {
         dbInstance.pragma('journal_mode = WAL');
       }
     } catch (err) {
-      console.error('[Database] Failed to initialize SQLite database, using fallback dummy DB:', err);
-      dbInstance = createDummyDb();
+      try {
+        const { DatabaseSync } = require('node:sqlite');
+        const rawDb = new DatabaseSync(dbPath);
+        rawDb.exec('PRAGMA foreign_keys = ON;');
+        if (!isVercel) {
+          try { rawDb.exec('PRAGMA journal_mode = WAL;'); } catch { }
+        }
+        dbInstance = {
+          exec: (sql: string) => rawDb.exec(sql),
+          pragma: (pragmaStr: string) => rawDb.exec(`PRAGMA ${pragmaStr};`),
+          prepare: (sql: string) => {
+            const stmt = rawDb.prepare(sql);
+            return {
+              get: (...params: any[]) => stmt.get(...params),
+              all: (...params: any[]) => stmt.all(...params),
+              run: (...params: any[]) => {
+                const res = stmt.run(...params);
+                return {
+                  changes: res.changes,
+                  lastInsertRowid: res.lastInsertRowid ? Number(res.lastInsertRowid) : 0,
+                };
+              },
+            };
+          },
+          transaction: (fn: any) => {
+            return (...args: any[]) => {
+              rawDb.exec('BEGIN TRANSACTION;');
+              try {
+                const result = fn(...args);
+                rawDb.exec('COMMIT;');
+                return result;
+              } catch (e) {
+                rawDb.exec('ROLLBACK;');
+                throw e;
+              }
+            };
+          },
+          close: () => rawDb.close(),
+        };
+      } catch (nodeSqliteErr) {
+        console.error('[Database] Failed to initialize SQLite database, using fallback dummy DB:', err);
+        dbInstance = createDummyDb();
+      }
     }
   }
   return dbInstance;
@@ -55,7 +96,7 @@ export function closeDb(): void {
   if (dbInstance) {
     try {
       dbInstance.close();
-    } catch {}
+    } catch { }
     dbInstance = null;
   }
 }

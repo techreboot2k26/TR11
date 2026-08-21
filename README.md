@@ -33,30 +33,53 @@
 
 1.  Clone the repository:
     ```bash
-    git clone <repository-url>
-    cd TR01
+    git clone https://github.com/karthik200805/TR11.git
+    cd TR11
     ```
 
 2.  Install dependencies:
     ```bash
-    npm install
+    # Node.js dependencies
+    npm install --ignore-scripts
+
+    # Python dependencies (Optional / Python FastAPI backend)
+    uv venv --python 3.13
+    .\.venv\Scripts\activate
+    uv pip install -r requirements.txt
     ```
 
 ### Running the Application
 
-Start the development server:
+1. **Start Backend Server**:
+   ```bash
+   npm run server
+   # Or for Python FastAPI backend:
+   uvicorn app.main:app --reload --port 5001
+   ```
 
-```bash
-npm run server
-```
+2. **Start Frontend Client**:
+   ```bash
+   npm run dev
+   ```
 
 The application will be accessible at:
-*   **Student Portal**: `http://localhost:3000`
-*   **Staff Dashboard**: `http://localhost:3000/staff`
-*   **Admin Portal**: `http://localhost:3000/admin`
+* **Frontend Application**: `http://localhost:5173`
+  * **Student Portal**: `http://localhost:5173/`
+  * **Staff Dashboard**: `http://localhost:5173/staff`
+  * **Admin Portal**: `http://localhost:5173/admin`
+* **Backend API**: `http://localhost:5001/api`
 
-## 🤝 Contributing
-Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+### Running Tests
+
+* **Vitest (TypeScript / Express)**:
+  ```bash
+  npm test
+  ```
+
+* **Pytest (Python / FastAPI)**:
+  ```bash
+  pytest
+  ```
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
