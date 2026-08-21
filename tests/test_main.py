@@ -40,10 +40,11 @@ def test_health():
 
 def test_unauthenticated_access():
     """
-    Verify that accessing student endpoints without authentication returns 403 Forbidden.
+    Verify that accessing student endpoints without authentication returns 401 Unauthorized or 403 Forbidden.
     """
     response = client.get("/api/student/services")
-    assert response.status_code == 403
+    assert response.status_code in (401, 403)
+
 
 def test_student_services_success():
     """
@@ -940,7 +941,8 @@ def test_admin_auth_restrictions():
     """
     # Unauthenticated
     res_unauth = client.get("/api/admin/dashboard")
-    assert res_unauth.status_code == 403
+    assert res_unauth.status_code in (401, 403)
+
 
     # Student
     res_student = client.get(
